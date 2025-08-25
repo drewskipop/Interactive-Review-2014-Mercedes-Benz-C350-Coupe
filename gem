@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Review: 2014 Mercedes-Benz C350 Coupe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A thematic, single-page dashboard designed for a prospective buyer. The flow starts with a high-level summary (The Verdict), moves to key performance metrics (Performance DNA), delves into the crucial financial aspect (Cost of Ownership), provides market context (Competitive Landscape), and ends with a detailed breakdown (In-Depth Analysis). This structure allows users to get a quick overview and then dive into specific areas of interest, which is more intuitive for a purchasing decision than a linear report. Key interactions include toggling between city/highway data, comparing the C350 to its rivals on a dynamic radar chart, and exploring detailed pros and cons in an interactive card layout. This user-centric design prioritizes quick synthesis and deep exploration. -->
+    <!-- Visualization & Content Choices: 
+        - Key Specs (Inform): Used dynamic HTML cards with icons for quick, scannable key metrics like HP, Torque, 0-60. Goal is immediate data consumption.
+        - Performance Gauges (Inform/Compare): Chart.js doughnut charts are used to visualize fuel economy. Interaction: Buttons to toggle between City and Highway MPG provide a simple, effective way to compare data points. Justification: More engaging than static text.
+        - Ownership Costs (Inform/Analyze): A Chart.js bar chart breaks down estimated annual costs. Goal: To clearly communicate the long-term financial commitment. Justification: A bar chart is ideal for comparing distinct cost categories.
+        - Competitive Analysis (Compare): A Chart.js radar chart is the centerpiece. Goal: Allow users to visually compare the C350 against its rivals across multiple qualitative and quantitative axes. Interaction: Buttons to select/deselect competitors dynamically update the chart. Justification: A radar chart is superior to a table for at-a-glance multi-attribute comparison.
+        - Pros & Cons (Organize/Inform): Interactive HTML/CSS cards with JS-powered content switching. Goal: To present the final assessment in a digestible, non-overwhelming format. Justification: This avoids a long wall of text and encourages user engagement.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F7F4;
+            color: #333;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+        }
+        .nav-button.active {
+            background-color: #333 !important;
+            color: #fff !important;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .stat-card {
+            background-color: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+        }
+        .competitor-btn.active {
+            background-color: #4A5568;
+            color: #FFFFFF;
+            border-color: #4A5568;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex flex-col sm:flex-row justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">2014 Mercedes-Benz C350 Coupe</h1>
+                    <p class="text-sm text-gray-500">An Interactive Buyer's Guide: A Decade Later</p>
+                </div>
+                <div class="mt-4 sm:mt-0">
+                    <span class="inline-flex items-center bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                        <span class="w-2 h-2 mr-1 bg-green-500 rounded-full"></span>
+                        Recommended (with conditions)
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <nav class="mb-8 bg-white p-2 rounded-lg shadow-sm flex flex-wrap justify-center gap-2">
+            <button data-section="verdict" class="nav-button active text-sm font-medium px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">The Verdict</button>
+            <button data-section="performance" class="nav-button text-sm font-medium px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">Performance DNA</button>
+            <button data-section="ownership" class="nav-button text-sm font-medium px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">Cost of Ownership</button>
+            <button data-section="competitors" class="nav-button text-sm font-medium px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">Competitive Landscape</button>
+            <button data-section="details" class="nav-button text-sm font-medium px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">In-Depth Analysis</button>
+        </nav>
+
+        <!-- Section: The Verdict -->
+        <section id="verdict" class="content-section active">
+            <div class="bg-white p-6 sm:p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">Final Assessment: A Tale of Two Cars</h2>
+                <p class="text-gray-600 mb-6">
+                    The 2014 C350 Coupe is a car of compelling dualities. A decade on, its strengths—timeless design, a premium and durable interior, a smooth V6, and a refined ride—have aged beautifully. Its weaknesses—a frustratingly dated infotainment system and numb steering—are more pronounced than ever. It offers incredible value, but this is tempered by the financial risk of a few well-documented, high-cost potential repairs. This dashboard helps you weigh these factors to see if it's the right car for you.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-green-50 border border-green-200 p-6 rounded-lg">
+                        <h3 class="text-lg font-semibold text-green-800 mb-2">Strengths</h3>
+                        <ul class="space-y-2 text-green-700 text-sm list-disc list-inside">
+                            <li>Timeless, elegant design that has aged gracefully.</li>
+                            <li>Superb "bank vault" build quality and durable interior materials.</li>
+                            <li>Powerful and smooth 3.5L naturally aspirated V6 for cruising.</li>
+                            <li>Refined, comfortable ride quality ideal for long distances.</li>
+                            <li>Excellent braking performance.</li>
+                            <li>Strong value proposition on the used market.</li>
+                        </ul>
+                    </div>
+                    <div class="bg-red-50 border border-red-200 p-6 rounded-lg">
+                        <h3 class="text-lg font-semibold text-red-800 mb-2">Weaknesses</h3>
+                        <ul class="space-y-2 text-red-700 text-sm list-disc list-inside">
+                            <li>Dated and frustrating COMAND infotainment system.</li>
+                            <li>Numb steering with a complete lack of feedback.</li>
+                            <li>7-speed transmission can be hesitant and slow to react.</li>
+                            <li>Significant risk of high-cost engine/transmission repairs.</li>
+                            <li>Poor rear visibility due to pillars and small window.</li>
+                            <li>Cramped rear seat space, limiting practicality.</li>
+                        </ul>
+                    </div>
+                </div>
+                 <div class="mt-8 border-t pt-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">✨ AI-Powered Buyer's Summary</h3>
+                    <p class="text-gray-600 mb-4">Not sure if this car fits your lifestyle? Select a profile below and let our AI generate a personalized summary for you.</p>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <select id="buyerProfile" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                            <option value="daily-commuter">The Daily Commuter</option>
+                            <option value="style-conscious">The Style-Conscious Driver</option>
+                            <option value="driving-enthusiast">The Driving Enthusiast</option>
+                            <option value="budget-buyer">The Budget-Conscious Buyer</option>
+                        </select>
+                        <button id="generateSummaryBtn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center gap-2">
+                            Generate Summary
+                        </button>
+                    </div>
+                    <div id="summaryResult" class="mt-4 p-4 bg-gray-50 rounded-lg border hidden"></div>
+                    <div id="summaryLoader" class="mt-4 hidden"><div class="loader mx-auto"></div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Performance DNA -->
+        <section id="performance" class="content-section">
+            <div class="bg-white p-6 sm:p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Performance DNA: The Grand Tourer's Heart</h2>
+                <p class="text-gray-600 mb-6">The C350 Coupe was engineered not as a raw sports car, but as a refined junior grand tourer. Its heart is the naturally aspirated 3.5L V6, providing smooth, linear power ideal for effortless highway cruising. While quick in a straight line, its dynamics prioritize comfort and stability over sharp handling and driver feedback.</p>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div class="stat-card">
+                        <div class="text-3xl font-bold text-gray-800">302</div>
+                        <div class="text-sm text-gray-500">Horsepower</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="text-3xl font-bold text-gray-800">273</div>
+                        <div class="text-sm text-gray-500">lb-ft Torque</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="text-3xl font-bold text-gray-800">5.6s</div>
+                        <div class="text-sm text-gray-500">0-60 mph (Tested)</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="text-3xl font-bold text-gray-800">108ft</div>
+                        <div class="text-sm text-gray-500">60-0 mph Stop</div>
+                    </div>
+                </div>
+
+                <div class="text-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">Real-World Fuel Economy (RWD)</h3>
+                    <div class="mt-2 inline-flex rounded-md shadow-sm">
+                        <button id="cityBtn" class="px-4 py-2 bg-gray-700 text-white rounded-l-md text-sm font-medium">City</button>
+                        <button id="hwyBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-r-md text-sm font-medium">Highway</button>
+                    </div>
+                </div>
+                <div class="chart-container h-64 md:h-80">
+                    <canvas id="fuelEconomyChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: Cost of Ownership -->
+        <section id="ownership" class="content-section">
+            <div class="bg-white p-6 sm:p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Cost of Ownership: The Price of Prestige</h2>
+                <p class="text-gray-600 mb-6">While the initial purchase price is attractive, owning a 10-year-old German luxury car requires a realistic budget. Maintenance, premium fuel, and insurance are significantly higher than for a mainstream vehicle. The most critical factor is budgeting for potential non-routine repairs, as a single major issue could cost a substantial fraction of the car's value.</p>
+                <div class="chart-container h-80 md:h-96">
+                    <canvas id="ownershipCostChart"></canvas>
+                </div>
+                 <p class="text-xs text-center text-gray-500 mt-4">Estimates based on 15,000 miles/year. The "Potential Repair Fund" is a recommended annual contingency for non-routine issues.</p>
+            </div>
+        </section>
+
+        <!-- Section: Competitive Landscape -->
+        <section id="competitors" class="content-section">
+            <div class="bg-white p-6 sm:p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Competitive Landscape (2014)</h2>
+                <p class="text-gray-600 mb-6">The C350 faced stiff competition from Germany and Japan. Each rival offered a different flavor of luxury and performance. Use the buttons below to compare the C350 against its key adversaries on a range of attributes, from driving dynamics to interior quality. This helps to highlight where the Mercedes truly shines as a comfortable grand tourer and where it falls short for the pure driving enthusiast.</p>
+                
+                <div class="flex flex-wrap justify-center gap-2 mb-6">
+                    <button class="competitor-btn active px-3 py-1 border rounded-full text-sm" data-competitor="bmw">BMW 435i</button>
+                    <button class="competitor-btn px-3 py-1 border rounded-full text-sm" data-competitor="audi">Audi S5</button>
+                    <button class="competitor-btn px-3 py-1 border rounded-full text-sm" data-competitor="infiniti">Infiniti Q60</button>
+                    <button class="competitor-btn px-3 py-1 border rounded-full text-sm" data-competitor="lexus">Lexus RC 350</button>
+                </div>
+
+                <div class="chart-container h-80 md:h-96">
+                    <canvas id="competitorChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section: In-Depth Analysis -->
+        <section id="details" class="content-section">
+            <div class="bg-white p-6 sm:p-8 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">In-Depth Analysis: Key Considerations</h2>
+                 <p class="text-gray-600 mb-6">Beyond the numbers, the ownership experience is defined by daily usability, technology, and long-term reliability. Here's a breakdown of the critical areas that will impact your decision.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="stat-card">
+                        <h3 class="font-semibold text-lg mb-2">Interior & Tech</h3>
+                        <p class="text-sm text-gray-600">The cabin is a high point for material quality and "bank vault" solidity. However, the COMAND infotainment is its greatest weakness—clunky, dated, and lacking modern features. An aftermarket CarPlay/Android Auto unit is a highly recommended upgrade.</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="font-semibold text-lg mb-2">Reliability Paradox</h3>
+                        <p class="text-sm text-gray-600">Day-to-day reliability is excellent, with high owner satisfaction. The risk lies in a few known, high-cost failures (e.g., timing chain tensioners). A thorough pre-purchase inspection by a specialist is non-negotiable to screen for these specific issues.</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="font-semibold text-lg mb-2">Practicality</h3>
+                        <p class="text-sm text-gray-600">Trunk space is decent (12.4 cu ft) and the standard split-folding rear seats add versatility. However, rear seats are cramped for adults, and visibility is poor due to thick pillars. Best considered a 2+2 for occasional rear passengers.</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="font-semibold text-lg mb-2">Engine (M276 V6)</h3>
+                        <p class="text-sm text-gray-600">This naturally aspirated V6 is smooth and reliable for the most part, but requires premium fuel. Watch for signs of timing chain rattle on cold starts, oil cooler leaks, and carbon buildup on intake valves at higher mileage.</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="font-semibold text-lg mb-2">Safety</h3>
+                        <p class="text-sm text-gray-600">Well-equipped for its era with 9 airbags and Attention Assist. It scored "Good" in most IIHS tests but only "Marginal" in the newer small-overlap test. Check for open recalls, especially for Takata airbags.</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 class="font-semibold text-lg mb-2">Buyer Profile</h3>
+                        <p class="text-sm text-gray-600">Ideal for a style-conscious daily driver who values comfort over sportiness. A poor choice for a driving enthusiast or a DIY mechanic. A high-risk choice for a budget-only buyer without a repair fund.</p>
+                    </div>
+                </div>
+                <div class="mt-8 border-t pt-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">✨ Ask an AI Mechanic</h3>
+                    <p class="text-gray-600 mb-4">Have a question about owning this car? Type it below. For example: "What is the cost to replace brake pads?"</p>
+                    <div class="flex flex-wrap items-center gap-4">
+                        <input type="text" id="mechanicQuery" class="flex-grow rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" placeholder="Ask a question...">
+                        <button id="askMechanicBtn" class="bg-teal-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-700 transition duration-300 flex items-center gap-2">
+                            Ask AI
+                        </button>
+                    </div>
+                    <div id="mechanicResult" class="mt-4 p-4 bg-gray-50 rounded-lg border hidden"></div>
+                    <div id="mechanicLoader" class="mt-4 hidden"><div class="loader mx-auto"></div></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="text-center py-6 text-xs text-gray-500">
+        <p>Data synthesized from the comprehensive 2014 Mercedes-Benz C350 Coupe review. This is an interactive visualization for informational purposes.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Navigation Logic
+            const navButtons = document.querySelectorAll('.nav-button');
+            const sections = document.querySelectorAll('.content-section');
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const sectionId = button.dataset.section;
+
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    sections.forEach(section => {
+                        if (section.id === sectionId) {
+                            section.classList.add('active');
+                        } else {
+                            section.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            // Fuel Economy Chart
+            let fuelEconomyChart;
+            const fuelCtx = document.getElementById('fuelEconomyChart').getContext('2d');
+            const cityBtn = document.getElementById('cityBtn');
+            const hwyBtn = document.getElementById('hwyBtn');
+
+            const fuelData = {
+                city: { labels: ['C350 RWD', 'C350 4MATIC'], values: [20, 19], max: 30 },
+                highway: { labels: ['C350 RWD', 'C350 4MATIC'], values: [28, 27], max: 35 }
+            };
+
+            function createFuelChart(data) {
+                if (fuelEconomyChart) fuelEconomyChart.destroy();
+                fuelEconomyChart = new Chart(fuelCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{ label: 'MPG', data: data.values, backgroundColor: ['rgba(54, 162, 235, 0.6)', 'rgba(75, 192, 192, 0.6)'], borderColor: ['rgba(54, 162, 235, 1)', 'rgba(75, 192, 192, 1)'], borderWidth: 1 }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false }, title: { display: true, text: 'EPA Estimated MPG' } },
+                        scales: { y: { beginAtZero: true, max: data.max, title: { display: true, text: 'Miles Per Gallon' } } }
+                    }
+                });
+            }
+
+            cityBtn.addEventListener('click', () => {
+                createFuelChart(fuelData.city);
+                cityBtn.classList.add('bg-gray-700', 'text-white'); cityBtn.classList.remove('bg-gray-200', 'text-gray-700');
+                hwyBtn.classList.add('bg-gray-200', 'text-gray-700'); hwyBtn.classList.remove('bg-gray-700', 'text-white');
+            });
+
+            hwyBtn.addEventListener('click', () => {
+                createFuelChart(fuelData.highway);
+                hwyBtn.classList.add('bg-gray-700', 'text-white'); hwyBtn.classList.remove('bg-gray-200', 'text-gray-700');
+                cityBtn.classList.add('bg-gray-200', 'text-gray-700'); cityBtn.classList.remove('bg-gray-700', 'text-white');
+            });
+
+            createFuelChart(fuelData.city);
+
+            // Ownership Cost Chart
+            const ownershipCtx = document.getElementById('ownershipCostChart').getContext('2d');
+            new Chart(ownershipCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Insurance', 'Premium Fuel', 'Maintenance', 'Depreciation', 'Repair Fund'],
+                    datasets: [{ label: 'Estimated Annual Cost (USD)', data: [1616, 2700, 860, 1000, 1250], backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)', 'rgba(255, 206, 86, 0.6)', 'rgba(75, 192, 192, 0.6)', 'rgba(153, 102, 255, 0.6)'], borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'], borderWidth: 1 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                    plugins: { legend: { display: false }, title: { display: true, text: 'Estimated Annual Ownership Costs' } },
+                    scales: { x: { beginAtZero: true, title: { display: true, text: 'Cost (USD)' } } }
+                }
+            });
+
+            // Competitor Chart
+            let competitorChart;
+            const competitorCtx = document.getElementById('competitorChart').getContext('2d');
+            const competitorBtns = document.querySelectorAll('.competitor-btn');
+
+            const competitorData = {
+                mercedes: { label: 'Mercedes C350', data: [8, 6, 9, 7, 5, 8], color: 'rgba(0, 123, 255, 0.4)' },
+                bmw: { label: 'BMW 435i', data: [6, 9, 6, 9, 7, 6], color: 'rgba(255, 99, 132, 0.4)' },
+                audi: { label: 'Audi S5', data: [7, 7, 8, 8, 8, 7], color: 'rgba(255, 206, 86, 0.4)' },
+                infiniti: { label: 'Infiniti Q60', data: [5, 8, 5, 7, 6, 7], color: 'rgba(75, 192, 192, 0.4)' },
+                lexus: { label: 'Lexus RC 350', data: [9, 5, 9, 6, 7, 9], color: 'rgba(153, 102, 255, 0.4)' },
+            };
+
+            const labels = ['Ride Comfort', 'Handling', 'Interior Quality', 'Performance', 'Infotainment', 'Reliability'];
+
+            function updateCompetitorChart() {
+                const activeCompetitors = ['mercedes'];
+                competitorBtns.forEach(btn => { if (btn.classList.contains('active')) activeCompetitors.push(btn.dataset.competitor); });
+                const datasets = activeCompetitors.map(key => {
+                    const competitor = competitorData[key];
+                    return { label: competitor.label, data: competitor.data, backgroundColor: competitor.color, borderColor: competitor.color.replace('0.4', '1'), pointBackgroundColor: competitor.color.replace('0.4', '1'), pointBorderColor: '#fff', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: competitor.color.replace('0.4', '1'), borderWidth: 1.5 };
+                });
+                if (competitorChart) competitorChart.destroy();
+                competitorChart = new Chart(competitorCtx, {
+                    type: 'radar',
+                    data: { labels: labels, datasets: datasets },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { r: { beginAtZero: true, max: 10, pointLabels: { font: { size: 10 } }, ticks: { stepSize: 2 } } },
+                        plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (context) => `${context.dataset.label || ''}: ${context.parsed.r}` } } }
+                    }
+                });
+            }
+
+            competitorBtns.forEach(button => {
+                button.addEventListener('click', () => { button.classList.toggle('active'); updateCompetitorChart(); });
+            });
+            updateCompetitorChart();
+
+            // Gemini API Integration
+            const apiKey = ""; // API key is handled by the environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            async function callGeminiAPI(prompt) {
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        throw new Error(`API request failed with status ${response.status}`);
+                    }
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        return "Sorry, I couldn't generate a response. The model's reply was empty.";
+                    }
+                } catch (error) {
+                    console.error("Gemini API Error:", error);
+                    return `Sorry, an error occurred while contacting the AI. Details: ${error.message}`;
+                }
+            }
+
+            // Buyer Summary Feature
+            const generateSummaryBtn = document.getElementById('generateSummaryBtn');
+            const summaryResult = document.getElementById('summaryResult');
+            const summaryLoader = document.getElementById('summaryLoader');
+            const buyerProfileSelect = document.getElementById('buyerProfile');
+
+            generateSummaryBtn.addEventListener('click', async () => {
+                summaryResult.classList.add('hidden');
+                summaryLoader.classList.remove('hidden');
+                const profile = buyerProfileSelect.options[buyerProfileSelect.selectedIndex].text;
+                const prompt = `
+                    Based on the following information for a used 2014 Mercedes-Benz C350 Coupe, write a concise, one-paragraph summary for a potential buyer whose profile is "${profile}".
+
+                    Strengths: Timeless design, superb build quality, powerful and smooth V6, comfortable ride, strong value.
+                    Weaknesses: Dated infotainment, numb steering, hesitant transmission, risk of some high-cost repairs, poor rear visibility, cramped rear seats.
+                    Key Specs: 302 HP, 273 lb-ft torque, 5.6s 0-60 mph.
+                    Target Persona: More of a comfortable grand tourer than a sharp sports car.
+
+                    Address the summary directly to this type of buyer.
+                `;
+                const responseText = await callGeminiAPI(prompt);
+                summaryResult.innerHTML = responseText.replace(/\n/g, '<br>');
+                summaryLoader.classList.add('hidden');
+                summaryResult.classList.remove('hidden');
+            });
+
+            // AI Mechanic Feature
+            const askMechanicBtn = document.getElementById('askMechanicBtn');
+            const mechanicResult = document.getElementById('mechanicResult');
+            const mechanicLoader = document.getElementById('mechanicLoader');
+            const mechanicQueryInput = document.getElementById('mechanicQuery');
+
+            askMechanicBtn.addEventListener('click', async () => {
+                const query = mechanicQueryInput.value;
+                if (!query) {
+                    mechanicResult.textContent = "Please enter a question.";
+                    mechanicResult.classList.remove('hidden');
+                    return;
+                }
+                mechanicResult.classList.add('hidden');
+                mechanicLoader.classList.remove('hidden');
+                const prompt = `
+                    You are an expert Mercedes-Benz mechanic. A customer is asking about a 2014 C350 Coupe with the M276 V6 engine. 
+                    Answer the following question clearly and concisely, providing a helpful explanation and a rough cost estimate in USD if applicable. 
+                    Be realistic about the costs for a 10-year-old German luxury car.
+
+                    Customer's question: "${query}"
+                `;
+                const responseText = await callGeminiAPI(prompt);
+                mechanicResult.innerHTML = responseText.replace(/\n/g, '<br>');
+                mechanicLoader.classList.add('hidden');
+                mechanicResult.classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
